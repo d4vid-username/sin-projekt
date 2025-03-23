@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="css/simulace.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul class="menu">
+                <li><button><a href="index.html">Domů</a></button></li>
+                <li><button id="fullscreen">Fullscreen</button></li>
+                <li><button id="schovat_menu">Schovat menu</button></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <!--<div id="rychla pomoc">
+            <img src="obr/road_soc_2.png" alt="cesta" id="auto">
+            <canvas id="canvas"></canvas>
+        </div>-->
+        <canvas id="canvas"></canvas>
+        <div id="tachometry" class="m1">
+            <p id ="tachometr">0 m/s </p>
+            <p id ="tachometr2">0 m/s </p>
+        </div>
+        <img src="obr/pedal.png" alt="plyn" id="plyn" class="m2">
+        <img src="obr/pedal.png" alt="brzda" id="brzda" class="m2">
+        <section class="uvod_m1 center">
+            <div class="idk">
+            <h2>Pocet otazek</h2>
+            <button id="vyhodnotit">Vyber graf</button>
+            <div class="center buttons">
+                <button id="pot1">1</button>
+                <button id="pot2">2</button>
+                <button id="pot3">3</button>
+                <button id="pot4">4</button>
+                <button id="pot5">5</button>
+                <button id="pot6">6</button>
+            </div>
+            </div>
+        </section>
+        <button id="bocni_tlacitko" class="m1">Přehrát znovu?</button>
+        
+    </main>
+    <p class="force_landscape">Prosím, otoč svoje zařízení na šířku</p>
+</body>
+
+
+<script src="scripts/grafy.js"></script>
+<script>
+    const road_img = new Image();
+    road_img.src = "obr/auto_obrazek.png" ;
+
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const bocni_tlacitko = document.getElementById("bocni_tlacitko");
+    const vyhodnoceni = document.getElementById("vyhodnotit");
+    const tachometr = document.getElementById("tachometr");
+    const tachometr2 = document.getElementById("tachometr2");
+    const fullscreen_toggle = document.getElementById("fullscreen");
+    fullscreen_toggle.addEventListener("click", () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    })
+    const schovat_menu = document.getElementById("schovat_menu");
+    schovat_menu.onclick = () => {
+        let menu = document.getElementsByClassName("menu");
+        for (let i = 0; i < menu.length; i++) {
+            menu[i].style.visibility = "hidden";
+        }
+    }
+
+    let idk = document.getElementsByClassName("uvod_m1");
+    
+    const uvitaci_idk = {
+        uvod_m1: document.getElementsByClassName("uvod_m1"),
+        uvod_m2: 0,
+        m1: document.getElementsByClassName("m1"),
+        m2: document.getElementsByClassName("m2"),
+        simulace: false,
+        zobraz: function (co) {
+            for (let i = 0; i < co.length; i++) {
+                //console.log(co[i]);
+                co[i].style.visibility = "visible";
+            }
+            //co.style.visibility = "visible";
+        },
+        skryj: function (co) {
+            for (let i = 0; i < co.length; i++) {
+                //console.log(co[i]);
+                co[i].style.visibility = "hidden";
+            }
+        }
+    }
+    
+    const ovladani = {
+        plyn: {
+            ref: document.getElementById("plyn"),
+            down: false },
+        brzda: {
+            ref: document.getElementById("brzda"),
+            down: false },
+        inicializace: function () {
+            this.plyn.ref.onmousedown = () => {
+                this.plyn.down = true;
+            }
+            this.plyn.ref.onmouseup = () => {
+                this.plyn.down = false;
+            }
+            this.plyn.ref.ontouchstart = () => {
+                this.plyn.down = true;
+            }
+            this.plyn.ref.ontouchend = () => {
+                this.plyn.down = false;
+            }
+
+            this.brzda.ref.onmousedown = () => {
+                this.brzda.down = true;
+            }
+            this.brzda.ref.onmouseup = () => {
+                this.brzda.down = false;
+            }
+            this.brzda.ref.ontouchstart = () => {
+                this.brzda.down = true;
+            }
+            this.brzda.ref.ontouchend = () => {
+                this.brzda.down = false;
+            }
+        },
+        odeslat: "idk"
+    }
+    ovladani.inicializace();
+
+    const uvodni_vyber = {
+        tlacitka: [
+            document.getElementById("pot1"),
+            document.getElementById("pot2"),
+            document.getElementById("pot3"),
+            document.getElementById("pot4"),
+            document.getElementById("pot5"),
+            document.getElementById("pot6")
+        ],
+        pocet_otazek: 0,
+        inicializace: function () {
+            this.tlacitka.forEach(element => {
+                element.onclick = () => {
+                    this.pocet_otazek = Number(element.innerHTML);
+                    //console.log(Number(this.pocet_otazek));
+                }
+            })
+        }     
+    }
+    uvodni_vyber.inicializace();
+
+
+    let sirka = innerWidth;
+    let vyska = innerHeight;
+    let scale_dpr;
+    function resize () {
+        sirka = innerWidth;
+        vyska = innerHeight;
+        scale_dpr = window.devicePixelRatio;
+        canvas.width = Math.floor(sirka * scale_dpr);
+        canvas.height = Math.floor(vyska * scale_dpr);
+        ctx.scale(scale_dpr, scale_dpr);
+    }
+    resize();
+
+    //window.onresize = resize();
+    
+    const parametry = {
+        framerate: 60,
+        sirka: innerWidth,
+        vyska: innerHeight,
+        pomer_px_ku_m: sirka/100 - sirka/2000,
+        zrychleni: 1/1000
+    }
+
+    function getRndInteger(min, max) {
+        return Math.floor(Math.random() * (max - min + 1) ) + min;
+    }
+
+    function in_border (x, y, a, b, sirka, vyska) {
+            if ((x <= a + sirka/2 & a - sirka/2 <= x) & (y <= b + vyska/2 & b - vyska/2 <= y)) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+    const car_1 = {
+        x: 0,
+        y: vyska*1/8,
+        movement: {
+            velocity: 0,
+            past_velocity: 0,
+            acceleration: 0,
+            distance: 0,
+            past_distance: 0,
+            aktualni: "a",
+            zmena_pb: function () {
+                if (ovladani.plyn.down) { this.acceleration = parametry.zrychleni; } else
+                if (ovladani.brzda.down) { this.acceleration = -parametry.zrychleni; } else
+                { this.acceleration = 0; }
+            },
+            prevody: function () {  // ?? funkcni ??
+                switch (this.aktualni) {
+                    case "a":
+                        this.velocity += this.acceleration;
+                        this.distance += this.velocity;
+                        break;
+                    case "v":
+                        this.acceleration = this.velocity - this.past_velocity;
+                        this.distance += this.velocity;
+                        break;
+                    case "s":
+                        this.velocity = this.distance - this.past_distance;
+                        this.acceleration = this.velocity - this.past_velocity;
+                        break;
+                }
+            },
+            preved_na_idk: function () {
+                this.velocity += this.acceleration;
+                this.distance += this.velocity;
+            }
+
+        },
+        pohyb: function () {
+            this.x = this.movement.distance*parametry.pomer_px_ku_m;
+            //console.log(this.movement.acceleration + " " + this.movement.velocity + " " + this.movement.distance);
+        },
+        draw: function () {
+            ctx.fillStyle = "white";
+            //ctx.fillRect(this.x, this.y, vyska*1/6*719/355, vyska*1/6);
+            ctx.drawImage(road_img, this.x, this.y, vyska*1/8*719/355, vyska*1/8);
+        }
+    }
+    const car_2 = {
+        x: 0,
+        y: vyska*2/8,
+        movement: {
+            velocity: 0,
+            past_velocity: 0,
+            acceleration: 0,
+            distance: 0,
+            past_distance: 0,
+            aktualni: "a",
+            zmena_pb: function () {
+                if (ovladani.plyn.down) { this.acceleration = parametry.zrychleni; } else
+                if (ovladani.brzda.down) { this.acceleration = -parametry.zrychleni; } else
+                { this.acceleration = 0; }
+            },
+            prevody: function () {  // ?? funkcni ??
+                switch (this.aktualni) {
+                    case "a":
+                        this.velocity += this.acceleration;
+                        this.distance += this.velocity;
+                        break;
+                    case "v":
+                        this.acceleration = this.velocity - this.past_velocity;
+                        this.distance += this.velocity;
+                        break;
+                    case "s":
+                        this.velocity = this.distance - this.past_distance;
+                        this.acceleration = this.velocity - this.past_velocity;
+                        break;
+                }
+            },
+            preved_na_idk: function () {
+                this.velocity += this.acceleration;
+                this.distance += this.velocity;
+            }
+
+        },
+        pohyb: function () {
+            this.x = this.movement.distance*parametry.pomer_px_ku_m;
+            //console.log(this.movement.acceleration + " " + this.movement.velocity + " " + this.movement.distance);
+        },
+        draw: function () {
+            ctx.fillStyle = "white";
+            //ctx.fillRect(this.x, this.y, vyska*1/6*719/355, vyska*1/6);
+            ctx.drawImage(road_img, this.x, this.y, vyska*1/8*719/355, vyska*1/8);
+        }
+    }
+
+        const movement = {
+            velocity: 0,
+            acceleration: 0,
+            treci_koeficient: 0.01,
+            //distance_traveled: 0,
+            pb: {
+                plyn: false,
+                brzda: false
+            },
+            treni: function () {
+                if (this.velocity > this.treci_koeficient) {
+                    this.velocity -= this.treci_koeficient;
+                }else if (this.velocity < -this.treci_koeficient) {
+                    this.velocity += this.treci_koeficient;
+                }else{
+                    this.velocity = 0;
+                }
+            },
+            vypocet_rychlosti: function () {
+                this.velocity += this.acceleration;
+            },
+            vypocet_zrychleni: function () {
+                if (this.pb.plyn) {
+                    this.acceleration = -0.1;
+                }else if (this.pb.brzda) {
+                    this.acceleration = +0.1;
+                }else {this.acceleration = 0;}  
+            }
+        }
+    
+    function obrazek_canvas () {
+        // tady bude vykresleni  cesty
+        ctx.fillStyle = "green";
+        ctx.fillRect(0, 0, sirka, vyska/2);
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, vyska/12, sirka, vyska/2 - 2*vyska/12);
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, vyska/11, sirka, vyska/100);
+        ctx.fillRect(0, vyska/2 - vyska/11 - vyska/100, sirka, vyska/100);
+        for (let i = 0; i < 20; i++) {
+            ctx.fillRect(0 + i*sirka/20 + sirka/80, vyska/4 + vyska/200, sirka/40, vyska/100)
+        }
+    }
+    //obrazek_canvas();
+
+    function scnvs () {
+        ctx.clearRect(0, 0, sirka, vyska);
+        obrazek_canvas();
+    }
+
+    uvitaci_idk.skryj(uvitaci_idk.m1);
+    //uvitaci_idk.skryj(uvitaci_idk.m2);
+    uvitaci_idk.skryj(uvitaci_idk.uvod_m1);
+    uvitaci_idk.skryj(uvitaci_idk.uvod_m2);
+
+    function zapis_do_tachometru (rychlost, rychlost_2) {
+        if (isNaN(rychlost)) { rychlost = 0; }
+        if (isNaN(rychlost_2)) { rychlost_2 = 0; }
+        tachometr.innerHTML = "Auto 1: " + Math.round(rychlost*1000)/1000 + " m/s ";
+        tachometr2.innerHTML = "Auto 2: " +  Math.round(rychlost_2*1000)/1000 + " m/s ";
+    }
+
+    let poradi = []
+
+    function nahodne_poradi () {
+        let x;
+        poradi = [];
+        for (let i = 0; i < 4; i++) {
+            x = getRndInteger(0, 3);
+            while (poradi.includes(x)) {
+                x = getRndInteger(0, 3);
+                //console.log(x);
+            }
+            poradi.push(x);
+        }
+        //console.log(poradi);
+        return poradi;
+    }
+
+    function Mod_1 () {
+        uvitaci_idk.zobraz(uvitaci_idk.uvod_m1);
+        let time = 0;
+        let pocet_zopakovani = 1;
+        let zopakovano = 0;
+        let oznaceny_grafy = 0;
+        let graf1 = [];
+        let graf2 = [];
+        let graf3 = [];
+        let graf4 = [];
+        let graf21 = [];
+        let graf22 = [];
+        let graf23 = [];
+        let graf24 = [];
+        uvodni_vyber.pocet_otazek = 6;
+        canvas.onclick = (e) => {
+            //vyhodnoceni.style.visibility = "visible";
+            vyhodnoceni.innerHTML = "Vyhodnotit?";
+            if (in_border(e.layerX, e.layerY, sirka/8 + poradi[0]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70)) {
+                oznaceny_grafy = 1;
+            } else if (in_border(e.layerX, e.layerY, sirka/8 + poradi[1]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70)) {
+                oznaceny_grafy = 2;
+            } else if (in_border(e.layerX, e.layerY, sirka/8 + poradi[2]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70)) {
+                oznaceny_grafy = 3;
+            } else if (in_border(e.layerX, e.layerY, sirka/8 + poradi[3]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70)) {
+                oznaceny_grafy = 4;
+            }
+            console.log(oznaceny_grafy);
+        }
+        const interval_id = setInterval(() => {
+            scnvs();
+            if (uvodni_vyber.pocet_otazek != 0 && zopakovano < pocet_zopakovani) {
+                if (time == 0) {
+                    vyhodnoceni.style.visibility = "hidden";
+                    uvitaci_idk.skryj(uvitaci_idk.uvod_m1);
+                    uvitaci_idk.zobraz(uvitaci_idk.m1);
+                    bocni_tlacitko.style.visibility = "hidden";
+                    pocet_zopakovani = uvodni_vyber.pocet_otazek;
+                    if (sady_grafu[zopakovano][0].length == 4) {
+                        let pomocna_sada_1 = [[], [], [], []];
+                        let grafy_2_auta = [
+                            sady_grafu[zopakovano][0],
+                            sady_grafu[zopakovano][1],
+                            sady_grafu[zopakovano][2],
+                            sady_grafu[zopakovano][3]
+                        ]
+                        for (let i = 0; i <4; i++) {
+                            let pomo = grafy_2_auta[i];
+                            if (pomo[1] == "v/t") {
+                                pomo[2].forEach(element => {
+                                    pomocna_sada_1[i].push(element/6);
+                                    console.log(element/6);
+                                });
+                            } else {
+                                pomocna_sada_1[i] = pomo[2];
+                            }
+                        }
+                        //console.log(zopakovano);
+                        graf21 = pomocna_sada_1[0];
+                        graf22 = pomocna_sada_1[1];
+                        graf23 = pomocna_sada_1[2];
+                        graf24 = pomocna_sada_1[3];
+                    }
+                    let pomocna_sada_1 = [[], [], [], []];
+                    let grafy_1_auta = [
+                            sady_grafu[zopakovano][0],
+                            sady_grafu[zopakovano][1],
+                            sady_grafu[zopakovano][2],
+                            sady_grafu[zopakovano][3]
+                        ]
+                        for (let i = 0; i <4; i++) {
+                            let pomo = grafy_1_auta[i];
+                            if (pomo[1] == "v/t") {
+                                pomo[0].forEach(element => {
+                                    pomocna_sada_1[i].push(element/6);
+                                    console.log(element/6);
+                                });
+                            } else {
+                                pomocna_sada_1[i] = pomo[0];
+                            }
+                        }
+                        
+                    console.log(pomocna_sada_1[0])
+                    graf1 = pomocna_sada_1[0];
+                    graf2 = pomocna_sada_1[1];
+                    graf3 = pomocna_sada_1[2];
+                    graf4 = pomocna_sada_1[3];
+                    //console.log(zopakovano);
+                    car_1.x = 0;
+                    car_2.x = 0;
+                    poradi = nahodne_poradi();
+                }
+                if (sady_grafu[zopakovano][0].length == 4) {
+                    switch (sady_grafu[zopakovano][0][1]) {
+                    case "s/t":
+                        car_1.x = graf1[time]*parametry.pomer_px_ku_m;
+                        zapis_do_tachometru(graf1[time] - graf1[time - 1], graf21[time] - graf21[time]);
+                        break;
+                    case "v/t":
+                        car_1.x += graf1[time]*parametry.pomer_px_ku_m/60*2;
+                        zapis_do_tachometru(graf1[time], graf21[time]);
+                        break;
+                    }
+                    //console.log("a");
+                } else {
+                    switch (sady_grafu[zopakovano][0][1]) {
+                    case "s/t":
+                    car_1.x = graf1[time]*parametry.pomer_px_ku_m;
+                        zapis_do_tachometru(graf1[time] - graf1[time - 1]);
+                        break;
+                    case "v/t":
+                    car_1.x += graf1[time]*parametry.pomer_px_ku_m/60*2;
+                        zapis_do_tachometru(graf1[time]);
+                        break;
+                    }   
+                }
+                             
+                
+                if (sady_grafu[zopakovano][0].length == 4) {
+                    switch (sady_grafu[zopakovano][0][1]) {
+                        case "s/t":
+                            car_2.x = graf21[time]*parametry.pomer_px_ku_m;
+                            break;
+                        case "v/t":
+                            car_2.x += graf21[time]*parametry.pomer_px_ku_m/60*2;
+                            break;
+                    } 
+                    //car_2.x = graf21[time]*4;
+                    car_2.draw();
+                    //vykresli_vnitrek_grafu(graf21, x - sirka/2, y + vyska/2, sirka, vyska, graf21.length);
+                    vykresli_graf(graf21, sirka/8 + poradi[0]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70, graf21.length, oznaceny_grafy, 1);
+                    vykresli_graf(graf22, sirka/8 + poradi[1]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70, graf22.length, oznaceny_grafy, 2);
+                    vykresli_graf(graf23, sirka/8 + poradi[2]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70, graf23.length, oznaceny_grafy, 3);
+                    vykresli_graf(graf24, sirka/8 + poradi[3]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70, graf24.length, oznaceny_grafy, 4);
+                }
+                // vykreslovani
+                car_1.draw();
+                vykresli_graf(graf1, sirka/8 + poradi[0]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70, graf1.length, oznaceny_grafy, 1, sady_grafu[zopakovano][0][1]);
+                vykresli_graf(graf2, sirka/8 + poradi[1]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70, graf2.length, oznaceny_grafy, 2, sady_grafu[zopakovano][1][1]);
+                vykresli_graf(graf3, sirka/8 + poradi[2]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70, graf3.length, oznaceny_grafy, 3, sady_grafu[zopakovano][2][1]);
+                vykresli_graf(graf4, sirka/8 + poradi[3]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70, graf4.length, oznaceny_grafy, 4, sady_grafu[zopakovano][3][1]);
+                time++;
+
+
+                // prehravani znovu a vyhodnocovani
+                if (time == graf1.length) {
+                    vyhodnoceni.style.visibility = "visible";
+                    bocni_tlacitko.style.visibility = "visible";
+                    bocni_tlacitko.onclick = () => {
+                        time = 0;
+                        //zopakovano--;
+                    }
+                    vyhodnoceni.onclick = () => {
+                        if (oznaceny_grafy == 1) {
+                            vyhodnoceni.innerHTML = "Správně, stiskni znovu pro pokračování dále";
+                            vyhodnoceni.onclick = () => {
+                                time = 0;
+                                zopakovano++;
+                                vyhodnoceni.innerHTML = "Vyber graf";
+                                oznaceny_grafy = 0;
+                            }
+                        } else {
+                            vyhodnoceni.innerHTML = "Špatne, zkus to znovu";
+                        }
+                    }
+                }
+            } else if (uvodni_vyber.pocet_otazek != 0) {
+                vyhodnoceni.innerHTML = "Toto je konec kvízu, klikni pro návrat do menu";
+                vyhodnoceni.style.visibility = "visible";
+                bocni_tlacitko.style.visibility = "hidden";
+                // reset
+                vyhodnoceni.onclick = () => {
+                    window.location.href = "index.html";;
+                    //vyhodnoceni.innerHTML = "<a href=\"index.html\">Návrat zpět do menu</a>"
+                    // mozna budu odkazovaz z5 do menu
+                    /*
+                    uvitaci_idk.zobraz(uvitaci_idk.uvod_m1);
+                    uvodni_vyber.pocet_otazek = 0;
+                    time = 0;
+                    pocet_zopakovani = 1;
+                    zopakovano = 0;
+                    spravny_graf = 0;
+                    oznaceny_grafy = 0;
+                    graf1 = [];
+                    graf2 = [];
+                    graf3 = [];
+                    graf4 = [];
+                    graf21 = [];
+                    graf22 = [];
+                    graf23 = [];
+                    graf24 = [];
+                    vyhodnoceni.style.visibility = "hidden";
+                    vyhodnoceni.innerHTML = "Vyber graf";
+                    let menu = document.getElementsByClassName("menu");
+                    for (let i = 0; i < menu.length; i++) {
+                        menu[i].style.visibility = "visible";
+                    }*/
+                }
+            }
+        }, 1000/parametry.framerate);
+    }
+
+    function frame_volny_mod () {
+        car_1.movement.zmena_pb();
+        car_1.movement.prevody();
+        car_1.pohyb();
+        if (car_1.movement.distance > 100) {
+            //car_1.x = sirka*15/16;
+            car_1.movement.distance = 100;
+            car_1.movement.velocity = 0;
+            car_1.movement.acceleration = 0;
+        } else if (car_1.movement.distance < 0) {
+            //car_1.x = 0;
+            car_1.movement.distance = 0;
+            car_1.movement.velocity = 0;
+            car_1.movement.acceleration = 0;
+        }
+        car_1.draw();
+    }
+    // v zakladu done
+    function Mod_2 () {
+        let delka_simulace = 10;
+        uvitaci_idk.zobraz(uvitaci_idk.m2);
+        let typ_grafu = "v/t";
+        bocni_tlacitko.innerHTML = "Přepnout na jiný typ grafu";
+        bocni_tlacitko.onclick = () => {
+            if (typ_grafu == "v/t") {
+                typ_grafu = "s/t";
+                //typy_grafu.innerHTML = "vzdalenost/cas";
+            } else if (typ_grafu == "s/t") {
+                typ_grafu = "a/t";
+                //typy_grafu.innerHTML = "zrychleni/cas";
+            } else {
+                typ_grafu = "v/t";
+                //typy_grafu.innerHTML = "rychlost/cas";
+            }
+        }
+
+        let time = 0;
+        let graf_rychlosti = [];
+        let graf_zrychleni = [];
+        let graf_drahy = [];
+        const interval_id = setInterval(() => {
+            scnvs();
+            frame_volny_mod();
+            graf_drahy.push(car_1.movement.distance);
+            graf_rychlosti.push(car_1.movement.velocity*60);
+            graf_zrychleni.push(car_1.movement.acceleration*60*60);
+            vykresli_graf(graf_drahy, sirka/2 - sirka/4, vyska*3/4, sirka/4 - 50, vyska/2 - 50, delka_simulace*parametry.framerate, 0, 1, "s/t");
+            vykresli_graf(graf_rychlosti, sirka/2, vyska*3/4, sirka/4 - 50, vyska/2 - 50, delka_simulace*parametry.framerate, 0, 1, "v/t");
+            vykresli_graf(graf_zrychleni, sirka/2 + sirka/4, vyska*3/4, sirka/4 - 50, vyska/2 - 50, delka_simulace*parametry.framerate, 0, 1, "a/t");
+            /*switch (typ_grafu) {
+                case "v/t":
+                vykresli_graf(graf_rychlosti, sirka/2, vyska*3/4, sirka*3/4 - 70, vyska/2 - 50, delka_simulace*parametry.framerate);
+                break;
+                case "a/t":
+                vykresli_graf(graf_zrychleni, sirka/2, vyska*3/4, sirka*3/4 - 70, vyska/2 - 50, delka_simulace*parametry.framerate);
+                break;
+                case "s/t":
+                vykresli_graf(graf_drahy, sirka/2, vyska*3/4, sirka*3/4 - 70, vyska/2 - 50, delka_simulace*parametry.framerate);
+                break;
+            }*/
+            time++;
+
+            if (time > /*tady bude hodnota udavajici delku grfu v pomeru na s*/ delka_simulace*parametry.framerate) {
+                time = 0;
+                graf_drahy = [];
+                graf_rychlosti = [];
+                graf_zrychleni = [];
+            }
+        }, 1000/parametry.framerate);
+    }
+
+    // v zakla
+    function Mod_demo () {
+        let delka_simulace = 6;
+        car_1.movement.acceleration = 100/3600/18;
+        let time = 0;
+        let graf_rychlosti = [];
+        let graf_zrychleni = [];
+        let graf_drahy = [];
+
+        const interval_id = setInterval(() => {
+            scnvs();
+            if (time < delka_simulace*parametry.framerate) {
+                car_1.movement.prevody();
+                car_1.pohyb();
+                graf_drahy.push(car_1.movement.distance);
+                graf_rychlosti.push(car_1.movement.velocity*60.5);
+                graf_zrychleni.push(car_1.movement.acceleration*61*60);
+                console.log(car_1.movement.velocity);
+            }
+            car_1.draw();
+            vykresli_graf(graf_drahy, sirka/2 - sirka/4, vyska*3/4, sirka/4 - 50, vyska/2 - 50, delka_simulace*parametry.framerate, 0, 1, "s/t");
+            vykresli_graf(graf_rychlosti, sirka/2, vyska*3/4, sirka/4 - 50, vyska/2 - 50, delka_simulace*parametry.framerate, 0, 1, "v/t");
+            vykresli_graf(graf_zrychleni, sirka/2 + sirka/4, vyska*3/4, sirka/4 - 50, vyska/2 - 50, delka_simulace*parametry.framerate, 0, 1, "a/t");
+            time++;
+        }, 1000/parametry.framerate)
+        
+
+    }
+
+
+    const params = new URLSearchParams(window.location.search);
+    const value = params.get("mod");
+
+    road_img.onload = () => {
+        if (value == 1) { Mod_1(); } else 
+        if (value == 2) { Mod_2(); } else 
+        { Mod_demo(); }
+    }
+    
+    //Mod_1();
+
+
+</script>
+
+</html>
