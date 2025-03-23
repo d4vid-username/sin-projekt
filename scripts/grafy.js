@@ -36,7 +36,7 @@ function cara(a, b, x, y, barva) {
 function text_na(x, y, text) {
     ctx.beginPath();
     ctx.fillStyle = "white";
-    ctx.font = "12px serif";
+    ctx.font = "16px Calibri";
     ctx.textAlign = "center";
     ctx.fillText(text, x, y);
 }
@@ -55,6 +55,18 @@ function marker(x, y, orientace, text) {
     cara(x, y, x + 10*a, y + 10*b, "white");
     text_na(x + 22*a, y + 22*b, text);
 }
+function popisek_grafu (typ, sirka, vyska) {
+    let text = "";
+    switch (typ) {
+        case "s/t":
+            text = "s[m] / t[s]"; break;
+        case "v/t":
+            text = "v[m/s] / t[s]"; break;
+        case "a/t":
+            text = "a[m/s*s] / t[s]"; break;
+    }
+    text_na(-sirka/2, -vyska/2 - 15, text)
+}
 // pomoc, podle me se to nejak sere
 function osa_y(a, b, /* x nevyuziju, bo je stejne jak a */ y, zacatek_skaly, konec_skaly, minimalni_delka_useku) {
     let pocet_odrazek = 1;
@@ -64,17 +76,77 @@ function osa_y(a, b, /* x nevyuziju, bo je stejne jak a */ y, zacatek_skaly, kon
     pocet_odrazek = pocet_odrazek/2;
     cara(a, b, a, y, "white");
     for (let i = 0; i <= 2*pocet_odrazek; i++) {
+        marker(a, b + i*y/pocet_odrazek, "w", Math.round((zacatek_skaly + i*konec_skaly/pocet_odrazek)*10)/20);
+    }
+}
+function osa_x(graph_len, a, b, x /* tentokrat je y stejne */) {
+    cara(a, b, x, b, "white");
+    //let abra = delka_grafu_s/scale_koef_x; // ??
+    for (let i = 0; i <= graph_len; i++) {
+        marker(a + i*2*x/graph_len, b, "s", i);
+    }
+}
+function vykresli_graf(graf, x, y, vyska, sirka, max_delka_grafu, oznaceny, id_grafu, typ) {
+    const idk_jak_to_pojmenovat = 50;
+    const pps = 60;
+    if (oznaceny == id_grafu) {
+        x = x - 10;
+        cara(x - sirka/2 - 33, y - vyska/2 - 33, x + sirka/2 + 33, y - vyska/2 - 33, "white");
+        cara(x + sirka/2 + 33, y - vyska/2 - 33, x + sirka/2 + 33, y + vyska/2 + 33, "white");
+        cara(x + sirka/2 + 33, y + vyska/2 + 33, x - sirka/2 - 33, y + vyska/2 + 33, "white");
+        cara(x - sirka/2 - 33, y + vyska/2 + 33, x - sirka/2 - 33, y - vyska/2 - 33, "white");
+        x = x + 10;
+    }
+    ctx.translate(x, y);
+    vyska -= 50;
+    //sirka -= 40;
+    popisek_grafu(typ, sirka, vyska);
+    osa_x(max_delka_grafu/pps, -sirka/2, vyska/2, sirka/2);
+    let graf_max = Math.max(...graf);
+    let graf_min = Math.min(...graf);
+    let meritko;
+    let usek_x = sirka/max_delka_grafu;
+    // osy
+    if (graf_min >= 0) {
+        let usek_y = vyska/graf_max;
+        osa_y(-sirka/2, vyska/2, -vyska/2, 0, graf_max, idk_jak_to_pojmenovat);
+        for (let i = 0; i < graf.length; i++) {
+            vykresli_tecku(-sirka/2 + i*usek_x, vyska/2 - graf[i]*usek_y, "yellow");
+        }
+    }
+    else {
+        cara(-sirka/2, 0, sirka/2, 0, "white")
+        if (graf_max >= Math.abs(graf_min)) { meritko = graf_max; }
+        else {  meritko = Math.abs(graf_min); }
+        let usek_y = vyska/2/meritko;
+        osa_y(-sirka/2, vyska/2, -vyska/2, -meritko*2, meritko*2, idk_jak_to_pojmenovat);
+        for (let i = 0; i < graf.length; i++) {
+            vykresli_tecku(-sirka/2 + i*usek_x, -graf[i]*usek_y, "yellow");
+        }
+    }
+    ctx.translate(-x, -y);
+}
+
+
+function osa_y_stara(a, b, /* x nevyuziju, bo je stejne jak a */ y, zacatek_skaly, konec_skaly, minimalni_delka_useku) {
+    let pocet_odrazek = 1;
+    while ((Math.abs(y)*2)/pocet_odrazek > minimalni_delka_useku) {
+        pocet_odrazek = pocet_odrazek*2;
+    }
+    pocet_odrazek = pocet_odrazek/4;
+    cara(a, b, a, y, "white");
+    for (let i = 0; i <= 2*pocet_odrazek; i++) {
         //cara(a, b + i*y/pocet_odrazek, a + sirka, b + i*y/pocet_odrazek)
         marker(a, y + i*(b-y)/pocet_odrazek/2, "w", Math.round((zacatek_skaly + i*konec_skaly/pocet_odrazek)*10)/20);
     }
 }
-function osa_x(graph_len, a, b, x /* tentokrat je y stejne */) {
+function osa_x_stara(graph_len, a, b, x /* tentokrat je y stejne */) {
     cara(a, b, x, b, "white");
     for (let i = 0; i <= graph_len; i++) {
         marker(a + i*(x-a)/graph_len, b, "s", i);
     }
 }
-function vykresli_vnitrek_grafu (graf, x, y, sirka, vyska, delka_konce_grafu) /*a, b - spodni body, x, y - kam to ma jit*/ {
+function vykresli_vnitrek_grafu_stary (graf, x, y, sirka, vyska, delka_konce_grafu) /*a, b - spodni body, x, y - kam to ma jit*/ {
     //ctx.translate(x, y);
     let graf_max = Math.max(...graf);
     //if (graf_max < 100 && graf_max > 10) { graf_max = 100; }
@@ -90,7 +162,7 @@ function vykresli_vnitrek_grafu (graf, x, y, sirka, vyska, delka_konce_grafu) /*
     }
     //ctx.translate(-x, -y);
 }
-function vykresli_graf (graf, x, y, sirka, vyska, max_delka_grafu, oznaceny, id_grafu) {
+function vykresli_graf_stary (graf, x, y, sirka, vyska, max_delka_grafu, oznaceny, id_grafu) {
 //console.log(graf);
 //ctx.fillStyle = "yellow";
 //ctx.fillRect(-sirka/2 + x, -vyska/2 + y, sirka, vyska)
@@ -107,7 +179,7 @@ if (gmin > 0) { gmin = 0; }
 let gmax = Math.max(...graf);
 //if (gmax < 100 && gmax > 10) { gmax = 100; }
 osa_x(max_delka_grafu/60, x - sirka/2, y + vyska/2, x + sirka/2);
-osa_y(x - sirka/2, y - vyska/2, y + vyska/2, gmin, gmax, 80);
+osa_y(x - sirka/2, y - vyska/2, y + vyska/2, gmin, gmax, 100);
 //let idk = graf.length/max_delka_grafu;
 vykresli_vnitrek_grafu(graf, x - sirka/2, y + vyska/2, sirka, vyska, max_delka_grafu);
 }
@@ -115,8 +187,8 @@ vykresli_vnitrek_grafu(graf, x - sirka/2, y + vyska/2, sirka, vyska, max_delka_g
 
 const sady_grafu = [
     [
-        [tvary.t1, "s/t"],
         [tvary.t1, "v/t"],
+        [tvary.t1, "s/t"],
         [tvary.t10, "s/t"],
         [tvary.t2, "s/t"],
     ],

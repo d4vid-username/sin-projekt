@@ -1,0 +1,72 @@
+html {
+    background-image: url("road_soc_2.png");
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-color: grey;
+}
+body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: 
+        /*"nav nav"*/
+        "main img";
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 2rem;
+    font-size: 1.25rem;
+}
+
+img {
+    grid-area: img;
+    width: 95%;
+    border-radius: 1em;
+    border: solid 7px #343232;
+}
+main {
+    grid-area: main;
+    margin: 2em;
+}
+/*header {
+    grid-area: nav;
+}*/
+
+li {
+    list-style: none;
+    font-size: 1.25em;
+}
+nav ul {
+    padding: 0;
+    display: flex;
+    margin: 2em;
+    gap: 2em;
+}
+ul {
+    background-color: whitesmoke;
+    border-radius: 1em;
+    margin: 1em;
+    border: solid 7px rgb(205, 59, 59);
+}
+h1 {
+    background-color: white;
+    border-radius: 1em;
+    padding: 1em;
+    border: solid 7px #343232;
+}
+a {
+    text-decoration: none;
+    color: black;
+}
+a:hover {
+    color: rgb(237, 85, 85);
+    text-decoration: underline;
+}
+.center {
+    display: grid;
+    place-content: center;
+}
+/*body > * {
+    padding: 1em;
+    background-color: rgb(255, 255, 255);
+    border: 5px solid black;
+    border-radius: 1em;
+}*/
