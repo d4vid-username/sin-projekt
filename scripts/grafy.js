@@ -65,7 +65,7 @@ function popisek_grafu (typ, sirka, vyska) {
         case "a/t":
             text = "a[m/s*s] / t[s]"; break;
     }
-    text_na(-sirka/2, -vyska/2 - 15, text)
+    text_na(-sirka/2 + 10, -vyska/2 - 15, text)
 }
 // pomoc, podle me se to nejak sere
 function osa_y(a, b, /* x nevyuziju, bo je stejne jak a */ y, zacatek_skaly, konec_skaly, minimalni_delka_useku) {
@@ -79,16 +79,23 @@ function osa_y(a, b, /* x nevyuziju, bo je stejne jak a */ y, zacatek_skaly, kon
         marker(a, b + i*y/pocet_odrazek, "w", Math.round((zacatek_skaly + i*konec_skaly/pocet_odrazek)*10)/20);
     }
 }
-function osa_x(graph_len, a, b, x /* tentokrat je y stejne */) {
+function osa_x(graph_len, a, b, x /* tentokrat je y stejne */, delitel) {
     cara(a, b, x, b, "white");
     //let abra = delka_grafu_s/scale_koef_x; // ??
-    for (let i = 0; i <= graph_len; i++) {
-        marker(a + i*2*x/graph_len, b, "s", i);
+    if (Number.isInteger(delitel)) {
+        for (let i = 0; i <= graph_len/delitel; i++) {
+            marker(a + i*delitel*x/graph_len, b, "s", i*delitel);
+        }
+    } else {
+        for (let i = 0; i <= graph_len; i++) {
+            marker(a + i*2*x/graph_len, b, "s", i);
+        }
     }
 }
 function vykresli_graf(graf, x, y, vyska, sirka, max_delka_grafu, oznaceny, id_grafu, typ) {
     const idk_jak_to_pojmenovat = 50;
     const pps = 60;
+    vyska -= 50;
     if (oznaceny == id_grafu) {
         x = x - 10;
         cara(x - sirka/2 - 33, y - vyska/2 - 33, x + sirka/2 + 33, y - vyska/2 - 33, "white");
@@ -98,7 +105,7 @@ function vykresli_graf(graf, x, y, vyska, sirka, max_delka_grafu, oznaceny, id_g
         x = x + 10;
     }
     ctx.translate(x, y);
-    vyska -= 50;
+    vyska -= 25;
     //sirka -= 40;
     popisek_grafu(typ, sirka, vyska);
     osa_x(max_delka_grafu/pps, -sirka/2, vyska/2, sirka/2);

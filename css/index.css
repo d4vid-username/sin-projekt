@@ -70,3 +70,34 @@ a:hover {
     border: 5px solid black;
     border-radius: 1em;
 }*/
+
+/*@media (orientation: portrait)  {
+    body {
+        display: flex;
+        flex-flow: column;
+    }
+}*/
+
+@media (max-width: 750px) {
+    body {
+        display: flex;
+        flex-flow: column;
+    }
+}
+
+@media (max-width: 450px ) {
+    body {
+        margin: auto;
+        padding: auto;
+        font-size: 1em;
+    }
+}
+
+/*@media (orientation: landscape)  {
+    body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas: 
+            "main img";
+    }
+}*/

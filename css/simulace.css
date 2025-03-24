@@ -34,10 +34,17 @@ canvas {
     z-index: -1;
     visibility: visible;
 }
-img {
+.img {
     height: 25vh;
+    width: 25vh;
     bottom: 0;
     z-index: 5;
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
+    /*background-color: #8b8b8b;*/
+    background-image: url("pedal.png");
+    background-size: cover;
 }
 #plyn { right: 0; }
 #brzda { left: 0; }
