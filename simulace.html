@@ -12,7 +12,7 @@
             <ul class="menu">
                 <li><button><a href="index.html">Domů</a></button></li>
                 <li><button id="fullscreen">Fullscreen</button></li>
-                <li><button id="schovat_menu" style="visibility: none">Schovat menu</button></li>
+                <li><button id="schovat_menu" style="display: none;">Schovat menu</button></li>
             </ul>
         </nav>
     </header>
@@ -81,7 +81,7 @@
         } else if (document.exitFullscreen) {
             document.exitFullscreen();
         }
-        resize();
+        //resize();
     })
     const schovat_menu = document.getElementById("schovat_menu");
     schovat_menu.onclick = () => {
@@ -148,7 +148,7 @@
                 this.brzda.down = false;
             }
         },
-        odeslat: "idk"
+        //odeslat: "idk"
     }
     ovladani.inicializace();
 
@@ -213,14 +213,20 @@
                     case "a":
                         this.velocity += this.acceleration;
                         this.distance += this.velocity - this.acceleration/2;
+                        this.past_distance = this.distance;
+                        this.past_velocity = this.velocity;
                         break;
                     case "v":
                         this.acceleration = this.velocity - this.past_velocity;
                         this.distance += this.velocity;
+                        this.past_distance = this.distance;
+                        this.past_velocity = this.velocity;
                         break;
                     case "s":
                         this.velocity = this.distance - this.past_distance;
                         this.acceleration = this.velocity - this.past_velocity;
+                        this.past_distance = this.distance;
+                        this.past_velocity = this.velocity;
                         break;
                 }
             },
@@ -434,7 +440,7 @@
                     switch (sady_grafu[zopakovano][0][1]) {
                     case "s/t":
                         car_1.x = graf1[time]*parametry.pomer_px_ku_m;
-                        zapis_do_tachometru(graf1[time] - graf1[time - 1], graf21[time] - graf21[time]);
+                        zapis_do_tachometru((graf1[time] - graf1[time - 1])*60, (graf21[time] - graf21[time])*60);
                         break;
                     case "v/t":
                         car_1.x += graf1[time]*parametry.pomer_px_ku_m/60;
@@ -446,7 +452,7 @@
                     switch (sady_grafu[zopakovano][0][1]) {
                     case "s/t":
                     car_1.x = graf1[time]*parametry.pomer_px_ku_m;
-                        zapis_do_tachometru(graf1[time] - graf1[time - 1]);
+                        zapis_do_tachometru((graf1[time] - graf1[time - 1])*60);
                         break;
                     case "v/t":
                     car_1.x += graf1[time]*parametry.pomer_px_ku_m/60;
