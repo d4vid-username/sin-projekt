@@ -15,6 +15,24 @@
                 <li><button id="schovat_menu" style="display: none;">Schovat menu</button></li>
             </ul>
         </nav>
+        <section class="m3">
+            <p>
+                <button id="novy_bod">Přidat nový bod</button>
+                <button id="bod">Bod: 0</button>
+                <button id="smazat_bod">Smazat vybraný bod</button>
+            </p>
+            <p>
+                <label for="čas">Délka časového úseku</label>
+                <input type="number" name="čas" id="time">
+                <label for="hodnota">Hodnota v grafu</label>
+                <input type="number" name="hodnota" id="value">
+                <button id="typ_funkce">Typ: lineární</button>
+            </p>
+            <p>
+                <button id="prehrat">Přehrát</button>
+                <button id="zmena_typu">Změnit typ</button>
+            </p>
+        </section>
     </header>
     <main>
         <!--<div id="rychla pomoc">
@@ -30,16 +48,14 @@
         <div id="brzda" class="m2 img"></div>
         <section class="uvod_m1 center">
             <div class="idk">
-            <h2>Pocet otazek</h2>
-            <button id="vyhodnotit">Vyber graf</button>
-            <div class="center buttons">
-                <button id="pot1">1</button>
-                <button id="pot2">2</button>
-                <button id="pot3">3</button>
-                <button id="pot4">4</button>
-                <button id="pot5">5</button>
-                <button id="pot6">6</button>
-            </div>
+                <h2 style="color: rgb(205, 205, 205);">Počet otázek</h2>
+                <button id="vyhodnotit">Vyber graf</button>
+                <div class="center buttons">
+                    <button id="pot1">lehčí 3</button>
+                    <button id="pot2">lehčích 6</button>
+                    <button id="pot3">těžší 3</button>
+                    <button id="pot4">těžších 6</button>
+                </div>
             </div>
         </section>
         <button id="bocni_tlacitko" class="m1">Přehrát znovu?</button>
@@ -50,6 +66,7 @@
 
 
 <script src="scripts/grafy.js"></script>
+<script src="scripts/tvoreni.js"></script>
 <script>
     const road_img = new Image();
     road_img.src = "obr/auto_obrazek.png" ;
@@ -60,21 +77,39 @@
     let sirka = innerWidth;
     let vyska = innerHeight;
     let scale_dpr;
+
+    // nastaví konstanty šířku a výšku na šířku a výšku viewportu (+- nějaké dorbáky, nikdy jsem to ponkrétně přes overflow neviděl)
+    // následně podle toho nastaví rozlišení canvas na rozlišení displeje přes dpr
+    // a nastaví velikost 1 canvas pixelu úměrně k dpr
+    // slouží to k tomu, ať není simulace na např. mobilech rozmazaná
+    // do budoucna bych mohl přidat skript, který bude automaticky reagovat na zvětšení nabo zmenšení displeje
+    // případně prohodí šířku s výškou, pokud nebude mobil orientovaný na výšku
     function resize () {
         sirka = innerWidth;
         vyska = innerHeight;
         scale_dpr = window.devicePixelRatio;
-        canvas.width = Math.floor(sirka * scale_dpr);
-        canvas.height = Math.floor(vyska * scale_dpr);
-        ctx.scale(scale_dpr, scale_dpr);
+        canvas.width = Math.floor(sirka * scale_dpr);   // Math.floor zaokrouhlí (sirka * scale_dpr)
+        canvas.height = Math.floor(vyska * scale_dpr);  // na nejblizsi integer
+        ctx.scale(scale_dpr, scale_dpr);                // (okno canvasu muzu nastavit jen na integer)
     }
     resize();
+    window.addEventListener('resize', () => {
+        resize();
+    });
 
+    // tento segment jenom načítá reference na elementy ve webové stránce
     const bocni_tlacitko = document.getElementById("bocni_tlacitko");
     const vyhodnoceni = document.getElementById("vyhodnotit");
     const tachometr = document.getElementById("tachometr");
     const tachometr2 = document.getElementById("tachometr2");
     const fullscreen_toggle = document.getElementById("fullscreen");
+
+    const play_button = document.getElementById("prehrat");
+    const zmena_typu_grafu = document.getElementById("zmena_typu");
+    const zobrazeni_tachometru = document.getElementById("tachometry");
+
+    // pokud zmáčknu tlačítko "Fullscreen", pokusí se dát okno na fullscreen
+    // moh bych se zabývat tím, jak fungují addEventListener a .onclick... ale jenom hromadně na začátku dokumentu, nebodo to psát 20x
     fullscreen_toggle.addEventListener("click", () => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen();
@@ -83,6 +118,9 @@
         }
         //resize();
     })
+
+    // testovací prvek, odstranit
+    // vysvětlit getElement / getElements
     const schovat_menu = document.getElementById("schovat_menu");
     schovat_menu.onclick = () => {
         let menu = document.getElementsByClassName("menu");
@@ -91,24 +129,27 @@
         }
     }
 
-    let idk = document.getElementsByClassName("uvod_m1");
-    
+    // už nevím, k čemu to bylo, možná jsem teď něco rozbil
+    //let idk = document.getElementsByClassName("uvod_m1");
+
+    // do této třídy/objektu jsem uložil reference na classy uvodů a módů
+    // třídy zapínám přes funkce (uložené v objektu/třídě), 
+    // které jako parametr vezmou referenci na class a zobrazí/skryjí všechny elementy, které jsou v ní
     const uvitaci_idk = {
         uvod_m1: document.getElementsByClassName("uvod_m1"),
         uvod_m2: 0,
         m1: document.getElementsByClassName("m1"),
         m2: document.getElementsByClassName("m2"),
+        m3: document.getElementsByClassName("m3"),
+        // k čemu tam je simulace ???
         simulace: false,
         zobraz: function (co) {
             for (let i = 0; i < co.length; i++) {
-                //console.log(co[i]);
                 co[i].style.visibility = "visible";
             }
-            //co.style.visibility = "visible";
         },
         skryj: function (co) {
             for (let i = 0; i < co.length; i++) {
-                //console.log(co[i]);
                 co[i].style.visibility = "hidden";
             }
         }
@@ -152,21 +193,23 @@
     }
     ovladani.inicializace();
 
-    const uvodni_vyber = {
+    const uvodni_vyber = {        
         tlacitka: [
             document.getElementById("pot1"),
             document.getElementById("pot2"),
             document.getElementById("pot3"),
-            document.getElementById("pot4"),
-            document.getElementById("pot5"),
-            document.getElementById("pot6")
+            document.getElementById("pot4")
         ],
         pocet_otazek: 0,
+        start: 0,
+        puvodni: false,
         inicializace: function () {
             this.tlacitka.forEach(element => {
                 element.onclick = () => {
-                    this.pocet_otazek = Number(element.innerHTML);
-                    //console.log(Number(this.pocet_otazek));
+                    if (element.innerHTML == "lehčí 3") { this.puvodni = true; this.pocet_otazek = 3; }
+                    else if (element.innerHTML == "lehčích 6") { this.pocet_otazek = 6; }
+                    else if (element.innerHTML == "těžší 3") { this.puvodni = true; this.pocet_otazek = 3; this.start = 6; }
+                    else if (element.innerHTML == "těžších 6") { this.pocet_otazek = 6; this.start = 6; }
                 }
             })
         }     
@@ -310,22 +353,26 @@
         }
     }
 
-    function scnvs () {
+    function scnvs (from) {
+        if (isNaN(from)) {from = 0}
         ctx.clearRect(0, 0, sirka, vyska);
         obrazek_canvas();
-        osa_x(100, 0, vyska*13/30, sirka, 4)
+        osa_x(from + 100, from, vyska*13/30, sirka, 4)
     }
 
     uvitaci_idk.skryj(uvitaci_idk.m1);
     uvitaci_idk.skryj(uvitaci_idk.m2);
+    uvitaci_idk.skryj(uvitaci_idk.m3);
     uvitaci_idk.skryj(uvitaci_idk.uvod_m1);
     uvitaci_idk.skryj(uvitaci_idk.uvod_m2);
 
     function zapis_do_tachometru (rychlost, rychlost_2) {
         if (isNaN(rychlost)) { rychlost = 0; }
         if (isNaN(rychlost_2)) { rychlost_2 = 0; }
-        tachometr.innerHTML = "Auto 1: " + Math.round(rychlost*1000)/1000 + " m/s ";
-        tachometr2.innerHTML = "Auto 2: " +  Math.round(rychlost_2*1000)/1000 + " m/s ";
+        let t1 = Math.round(rychlost*1000)/1000;
+        let t2 = Math.round(rychlost_2*1000)/1000;
+        tachometr.innerHTML = "Auto 1: " + Math.trunc(t1) + "," + Math.trunc(Math.abs(fract(t1))*1000) + " m/s ";
+        tachometr2.innerHTML = "Auto 2: " + Math.trunc(t2) + "," + Math.trunc(Math.abs(fract(t2))*1000) + " m/s ";
     }
 
     let poradi = [];
@@ -347,6 +394,9 @@
 
     function Mod_1 () {
         uvitaci_idk.zobraz(uvitaci_idk.uvod_m1);
+        //bocni_tlacitko.innerHTML = "Demo";
+        //bocni_tlacitko.style.visibility = "visible";
+        //bocni_tlacitko.onclick = () => {Mod_demo();}
         let time = 0;
         let pauzatime = 0;
         let pocet_zopakovani = 1;
@@ -360,9 +410,9 @@
         let graf22 = [];
         let graf23 = [];
         let graf24 = [];
-        uvodni_vyber.pocet_otazek = 6;
+        // docasne
+        //uvodni_vyber.pocet_otazek = 6;
         canvas.onclick = (e) => {
-            //vyhodnoceni.style.visibility = "visible";
             vyhodnoceni.innerHTML = "Vyhodnotit?";
             if (in_border(e.layerX, e.layerY, sirka/8 + poradi[0]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70)) {
                 oznaceny_grafy = 1;
@@ -373,48 +423,67 @@
             } else if (in_border(e.layerX, e.layerY, sirka/8 + poradi[3]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70)) {
                 oznaceny_grafy = 4;
             }
-            console.log(oznaceny_grafy);
+        }
+        canvas.ontouchstart = (e) => {
+            let touch = e.touches[0];
+            let x = touch.clientX;
+            let y = touch.clientY;
+            vyhodnoceni.innerHTML = "Vyhodnotit?";
+            if (in_border(x, y, sirka/8 + poradi[0]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70)) {
+                oznaceny_grafy = 1;
+            } else if (in_border(x, y, sirka/8 + poradi[1]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70)) {
+                oznaceny_grafy = 2;
+            } else if (in_border(x, y, sirka/8 + poradi[2]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70)) {
+                oznaceny_grafy = 3;
+            } else if (in_border(x, y, sirka/8 + poradi[3]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70)) {
+                oznaceny_grafy = 4;
+            }
         }
         poradi = nahodne_poradi();
         const interval_id = setInterval(() => {
             scnvs();
             if (uvodni_vyber.pocet_otazek != 0 && zopakovano < pocet_zopakovani) {
                 if (time == 0) {
+                    // nastaveni zobrazeni veci
                     vyhodnoceni.style.visibility = "hidden";
                     uvitaci_idk.skryj(uvitaci_idk.uvod_m1);
                     uvitaci_idk.zobraz(uvitaci_idk.m1);
                     bocni_tlacitko.style.visibility = "hidden";
+                    bocni_tlacitko.innerHTML = "Přehrát znovu?";
+                    // nastaveni poctu otazek na prehrati
                     pocet_zopakovani = uvodni_vyber.pocet_otazek;
-                    if (sady_grafu[zopakovano][0].length == 4) {
-                        let pomocna_sada_1 = [[], [], [], []];
+
+                    // nacitani samotnych grafu
+                    if (sady_grafu[zopakovano + uvodni_vyber.start][0].length == 4) {
+                        let pomocna_sada_2 = [[], [], [], []];
                         let grafy_2_auta = [
-                            sady_grafu[zopakovano][0],
-                            sady_grafu[zopakovano][1],
-                            sady_grafu[zopakovano][2],
-                            sady_grafu[zopakovano][3]
+                            sady_grafu[zopakovano + uvodni_vyber.start][0],
+                            sady_grafu[zopakovano + uvodni_vyber.start][1],
+                            sady_grafu[zopakovano + uvodni_vyber.start][2],
+                            sady_grafu[zopakovano + uvodni_vyber.start][3]
                         ]
                         for (let i = 0; i <4; i++) {
                             let pomo = grafy_2_auta[i];
+                            // prevod na rychlost
                             if (pomo[1] == "v/t") {
                                 pomo[2].forEach(element => {
-                                    pomocna_sada_1[i].push(element/6);
+                                    pomocna_sada_2[i].push(element/6);
                                 });
                             } else {
-                                pomocna_sada_1[i] = pomo[2];
+                                pomocna_sada_2[i] = pomo[2];
                             }
                         }
-                        //console.log(zopakovano);
-                        graf21 = pomocna_sada_1[0];
-                        graf22 = pomocna_sada_1[1];
-                        graf23 = pomocna_sada_1[2];
-                        graf24 = pomocna_sada_1[3];
+                        graf21 = pomocna_sada_2[0];
+                        graf22 = pomocna_sada_2[1];
+                        graf23 = pomocna_sada_2[2];
+                        graf24 = pomocna_sada_2[3];
                     }
                     let pomocna_sada_1 = [[], [], [], []];
                     let grafy_1_auta = [
-                            sady_grafu[zopakovano][0],
-                            sady_grafu[zopakovano][1],
-                            sady_grafu[zopakovano][2],
-                            sady_grafu[zopakovano][3]
+                            sady_grafu[zopakovano + uvodni_vyber.start][0],
+                            sady_grafu[zopakovano + uvodni_vyber.start][1],
+                            sady_grafu[zopakovano + uvodni_vyber.start][2],
+                            sady_grafu[zopakovano + uvodni_vyber.start][3]
                         ]
                         for (let i = 0; i <4; i++) {
                             let pomo = grafy_1_auta[i];
@@ -436,7 +505,8 @@
                     car_2.x = 0;
                     pauzatime++;
                 }
-                if (sady_grafu[zopakovano][0].length == 4) {
+                // zapisy do tachometru + pohyb auta
+                if (sady_grafu[zopakovano][0].length == 4 && time < graf1.length) {
                     switch (sady_grafu[zopakovano][0][1]) {
                     case "s/t":
                         car_1.x = graf1[time]*parametry.pomer_px_ku_m;
@@ -447,22 +517,21 @@
                         zapis_do_tachometru(graf1[time], graf21[time]);
                         break;
                     }
-                    //console.log("a");
-                } else {
+                } else if (time < graf1.length) {
                     switch (sady_grafu[zopakovano][0][1]) {
-                    case "s/t":
-                    car_1.x = graf1[time]*parametry.pomer_px_ku_m;
-                        zapis_do_tachometru((graf1[time] - graf1[time - 1])*60);
-                        break;
-                    case "v/t":
-                    car_1.x += graf1[time]*parametry.pomer_px_ku_m/60;
-                        zapis_do_tachometru(graf1[time]);
-                        break;
+                        case "s/t":
+                        car_1.x = graf1[time]*parametry.pomer_px_ku_m;
+                            zapis_do_tachometru((graf1[time] - graf1[time - 1])*60);
+                            break;
+                        case "v/t":
+                        car_1.x += graf1[time]*parametry.pomer_px_ku_m/60;
+                            zapis_do_tachometru(graf1[time]);
+                            break;
                     }   
                 }
                              
                 
-                if (sady_grafu[zopakovano][0].length == 4) {
+                if (sady_grafu[zopakovano + uvodni_vyber.start][0].length == 4) {
                     switch (sady_grafu[zopakovano][0][1]) {
                         case "s/t":
                             car_2.x = graf21[time]*parametry.pomer_px_ku_m;
@@ -474,23 +543,26 @@
                     //car_2.x = graf21[time]*4;
                     car_2.draw();
                     //vykresli_vnitrek_grafu(graf21, x - sirka/2, y + vyska/2, sirka, vyska, graf21.length);
-                    vykresli_graf(graf21, sirka/8 + poradi[0]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70, graf21.length, oznaceny_grafy, 1);
-                    vykresli_graf(graf22, sirka/8 + poradi[1]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70, graf22.length, oznaceny_grafy, 2);
-                    vykresli_graf(graf23, sirka/8 + poradi[2]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70, graf23.length, oznaceny_grafy, 3);
-                    vykresli_graf(graf24, sirka/8 + poradi[3]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70, graf24.length, oznaceny_grafy, 4);
+                    vykresli_graf(graf21, sirka/8 + poradi[0]*sirka/4 + 15, vyska*3/4, vyska/2 - 100, sirka/4 - 100, graf21.length, oznaceny_grafy, 1);
+                    vykresli_graf(graf22, sirka/8 + poradi[1]*sirka/4 + 15, vyska*3/4, vyska/2 - 100, sirka/4 - 100, graf22.length, oznaceny_grafy, 2);
+                    vykresli_graf(graf23, sirka/8 + poradi[2]*sirka/4 + 15, vyska*3/4, vyska/2 - 100, sirka/4 - 100, graf23.length, oznaceny_grafy, 3);
+                    vykresli_graf(graf24, sirka/8 + poradi[3]*sirka/4 + 15, vyska*3/4, vyska/2 - 100, sirka/4 - 100, graf24.length, oznaceny_grafy, 4);
                 }
                 // vykreslovani
                 car_1.draw();
-                vykresli_graf(graf1, sirka/8 + poradi[0]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70, graf1.length, oznaceny_grafy, 1, sady_grafu[zopakovano][0][1]);
-                vykresli_graf(graf2, sirka/8 + poradi[1]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70, graf2.length, oznaceny_grafy, 2, sady_grafu[zopakovano][1][1]);
-                vykresli_graf(graf3, sirka/8 + poradi[2]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70, graf3.length, oznaceny_grafy, 3, sady_grafu[zopakovano][2][1]);
-                vykresli_graf(graf4, sirka/8 + poradi[3]*sirka/4, vyska*3/4, sirka/4 - 70, vyska/2 - 70, graf4.length, oznaceny_grafy, 4, sady_grafu[zopakovano][3][1]);
+                //console.log(car_1.x)
+                vykresli_graf(graf1, sirka/8 + poradi[0]*sirka/4 + 15, vyska*3/4, vyska/2 - 100, sirka/4 - 100, graf1.length, oznaceny_grafy, 1, sady_grafu[zopakovano][0][1]);
+                vykresli_graf(graf2, sirka/8 + poradi[1]*sirka/4 + 15, vyska*3/4, vyska/2 - 100, sirka/4 - 100, graf2.length, oznaceny_grafy, 2, sady_grafu[zopakovano][1][1]);
+                vykresli_graf(graf3, sirka/8 + poradi[2]*sirka/4 + 15, vyska*3/4, vyska/2 - 100, sirka/4 - 100, graf3.length, oznaceny_grafy, 3, sady_grafu[zopakovano][2][1]);
+                vykresli_graf(graf4, sirka/8 + poradi[3]*sirka/4 + 15, vyska*3/4, vyska/2 - 100, sirka/4 - 100, graf4.length, oznaceny_grafy, 4, sady_grafu[zopakovano][3][1]);
+                
                 if (pauzatime > -1) {
                     time++;
                 }
 
                 // prehravani znovu a vyhodnocovani
                 if (time == graf1.length) {
+                    // nastavovani zobrazeni
                     vyhodnoceni.style.visibility = "visible";
                     bocni_tlacitko.style.visibility = "visible";
                     bocni_tlacitko.onclick = () => {
@@ -520,30 +592,6 @@
                 // reset
                 vyhodnoceni.onclick = () => {
                     window.location.href = "index.html";;
-                    //vyhodnoceni.innerHTML = "<a href=\"index.html\">Návrat zpět do menu</a>"
-                    // mozna budu odkazovaz z5 do menu
-                    /*
-                    uvitaci_idk.zobraz(uvitaci_idk.uvod_m1);
-                    uvodni_vyber.pocet_otazek = 0;
-                    time = 0;
-                    pocet_zopakovani = 1;
-                    zopakovano = 0;
-                    spravny_graf = 0;
-                    oznaceny_grafy = 0;
-                    graf1 = [];
-                    graf2 = [];
-                    graf3 = [];
-                    graf4 = [];
-                    graf21 = [];
-                    graf22 = [];
-                    graf23 = [];
-                    graf24 = [];
-                    vyhodnoceni.style.visibility = "hidden";
-                    vyhodnoceni.innerHTML = "Vyber graf";
-                    let menu = document.getElementsByClassName("menu");
-                    for (let i = 0; i < menu.length; i++) {
-                        menu[i].style.visibility = "visible";
-                    }*/
                 }
             }
         }, 1000/parametry.framerate);
@@ -576,21 +624,36 @@
         let graf_zrychleni = [];
         let graf_drahy = [];
         const interval_id = setInterval(() => {
+            if (time == 0) {
+                bocni_tlacitko.style.visibility = "hidden";
+            }
             scnvs();
-            frame_volny_mod();
-            graf_drahy.push(car_2.movement.distance);
-            graf_rychlosti.push(car_2.movement.velocity*60);
-            graf_zrychleni.push(car_2.movement.acceleration*60*60);
+            //frame_volny_mod();
+            if (time <= delka_simulace*parametry.framerate) {
+                graf_drahy.push(car_2.movement.distance);
+                graf_rychlosti.push(car_2.movement.velocity*60);
+                graf_zrychleni.push(car_2.movement.acceleration*60*60);
+                frame_volny_mod();
+            } else {
+                car_2.draw();
+            }
             vykresli_graf(graf_drahy, sirka/2 - sirka/4, vyska*3/4, sirka/4 - 50, vyska/2 - 50, delka_simulace*parametry.framerate, 0, 1, "s/t");
             vykresli_graf(graf_rychlosti, sirka/2, vyska*3/4, sirka/4 - 50, vyska/2 - 50, delka_simulace*parametry.framerate, 0, 1, "v/t");
             vykresli_graf(graf_zrychleni, sirka/2 + sirka/4, vyska*3/4, sirka/4 - 50, vyska/2 - 50, delka_simulace*parametry.framerate, 0, 1, "a/t");
             time++;
 
             if (time > delka_simulace*parametry.framerate) {
-                time = 0;
-                graf_drahy = [];
-                graf_rychlosti = [];
-                graf_zrychleni = [];
+                bocni_tlacitko.style.visibility = "visible";
+                bocni_tlacitko.innerHTML = "Přehrát znovu?";
+                car_2.movement.velocity = 0;
+                bocni_tlacitko.onclick = () => {
+                    time = 0;
+                    graf_drahy = [];
+                    graf_rychlosti = [];
+                    graf_zrychleni = [];
+                    car_2.movement.distance = 0;
+                    //car_2.movement.velocity = 0;
+                }
             }
         }, 1000/parametry.framerate);
     }
@@ -612,8 +675,6 @@
                 graf_drahy.push(car_2.movement.distance);
                 graf_rychlosti.push(car_2.movement.velocity*60);
                 graf_zrychleni.push(car_2.movement.acceleration*60*60);
-            } else {
-                console.log(graf_rychlosti[graf_drahy.length-1])
             }
             car_2.draw();
             vykresli_graf(graf_drahy, sirka/2 - sirka/4, vyska*3/4, sirka/4 - 50, vyska/2 - 50, delka_simulace*parametry.framerate, 0, 1, "s/t");
@@ -625,6 +686,109 @@
 
     }
 
+    function border_check (border1, border2) {
+        if (car_2.x < border1) { car_2.x += 100; }
+        if (car_2.x > border2) { car_2.x -= 100; }
+        car_2.x = 0;
+    }
+    function posun (n) {
+        car_2.x -= n*100;
+    }
+
+    function Mod_3 () {
+        uvitaci_idk.zobraz(uvitaci_idk.m3)
+        document.addEventListener('touchstart', function (e) {
+            const touch = e.touches[0];
+            const x = touch.clientX;
+            const y = touch.clientY;
+            let pom = [];
+            for (let i = 0; i < prace_s_body.body.length; i++) {
+                pom = prace_s_body.prepocet_na_onko(i);
+                if (je_v_kruznici(x, y, sirka/25, pom[0], pom[1])) {
+                    prace_s_body.aktualni = i;
+                    edit_bodu.aktualizace();
+                }
+                
+            }
+        });
+        document.addEventListener('click', function (e) {
+            let x = e.clientX;
+            let y = e.clientY;
+            let pom = [];
+            for (let i = 0; i < prace_s_body.body.length; i++) {
+                pom = prace_s_body.prepocet_na_onko(i);
+                if (je_v_kruznici(x, y, sirka/25, pom[0], pom[1])) {
+                    prace_s_body.aktualni = i;
+                    edit_bodu.aktualizace();
+                }
+            }
+        });
+        let pos = [sirka/2, vyska/2 + 80, vyska - 220, sirka - 100];
+        prace_s_body.pozice_grafu = pos;
+        edit_bodu.intilaziation()
+        prace_s_body.vygenerovat_graf()
+
+        play_button.onclick = () => {
+            prace_s_body.pozice_grafu = [sirka/2, vyska*3/4, vyska/2 - 50, sirka - 100];
+            prace_s_body.prehrava = true;
+            car_2.movement.distance = 0;
+            car_2.x = 0;
+        }
+        zmena_typu_grafu.onclick = () => {
+            if (prace_s_body.typ_grafu == "v/t") { prace_s_body.typ_grafu = "s/t"; }
+            else { prace_s_body.typ_grafu = "v/t"; }
+            
+        }
+
+        time = 0;
+        const intid = setInterval (() => {
+            ctx.clearRect(0, 0, sirka, vyska);
+            
+            if (prace_s_body.prehrava) {
+                if (time == 0) { 
+                    uvitaci_idk.skryj(uvitaci_idk.m3);
+                    zobrazeni_tachometru.style.visibility = "visible";
+                }
+                scnvs();
+                switch (prace_s_body.typ_grafu) {
+                    case "s/t":
+                        car_2.x = prace_s_body.graf[time]*parametry.pomer_px_ku_m;
+                        zapis_do_tachometru((prace_s_body.graf[time] - prace_s_body.graf[time - 1])*60);
+                        break;
+                    case "v/t":
+                        car_2.x += prace_s_body.graf[time]*parametry.pomer_px_ku_m/60;
+                        zapis_do_tachometru(prace_s_body.graf[time]);
+                        break;
+                }
+                if (time >= prace_s_body.graf.length) {
+                    switch (prace_s_body.typ_grafu) {
+                        case "s/t":
+                            car_2.x = prace_s_body.graf[prace_s_body.graf.length]*parametry.pomer_px_ku_m;
+                            break;
+                        case "v/t":
+                            car_2.x += 0;
+                            break;
+                    }
+                }
+                car_2.draw();
+                time++;
+            }
+            
+            if (time == prace_s_body.graf.length) {
+                bocni_tlacitko.style.visibility = "visible";
+                bocni_tlacitko.innerHTML = "Upravit graf";
+                bocni_tlacitko.onclick = () => {
+                    uvitaci_idk.zobraz(uvitaci_idk.m3);
+                    zobrazeni_tachometru.style.visibility = "hidden";
+                    bocni_tlacitko.style.visibility = "hidden";
+                    prace_s_body.prehrava = false;
+                    time = 0;
+                    prace_s_body.pozice_grafu = pos;
+                }
+            }
+            prace_s_body.vykreslit_graf();
+        }, 1000/60)
+    }
 
     const params = new URLSearchParams(window.location.search);
     const value = params.get("mod");
@@ -632,6 +796,7 @@
     road_img.onload = () => {
         if (value == 1) { Mod_1(); } else 
         if (value == 2) { Mod_2(); } else 
+        if (value == 3) { Mod_3(); } else 
         { Mod_demo(); }
     }
 </script>
