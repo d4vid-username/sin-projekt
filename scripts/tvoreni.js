@@ -110,16 +110,16 @@ const prace_s_body = {
 }
 
 function prepis_textu(a) {
-    let text = "Typ: ";
+    let text = "Tvar: ";
     switch (a) {
         case 0:
-            text += "lineární";
+            text += "přímka";
             break;
         case 1:
-            text += "kvadratická";
+            text += "parabola";
             break;
         case 2:
-            text += "inverzní kvadratická";
+            text += "obrácená parabola";
             break;
     }
     return text;
